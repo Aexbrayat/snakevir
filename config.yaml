@@ -1,0 +1,42 @@
+# YAML file format
+# Some options for the seekviralreads snakefile pipeline
+# A name for the run:
+run: Aevex_mares
+# path to fastq files. All samples fastq are in this directory and formatted as {sample}_1.fastq and {sample}_2.fastq
+fastq: /samples/
+# Indicate how the reads are named (ex:_R1 , _R2 or _001_R1 , _001_R2)
+ext_R1: _1
+ext_R2: _2
+# Indicate the fastq extension (ex: fastq.gz , fastq , fq )
+ext: .fastq
+# Sequence of sequencing adapters
+A3: CAGCGGACGCCTATGTGATG
+A5: CATCACATAGGCGTCCGCTG
+# Path to host sequences
+# Bacterial Ribosomal RNA sequence without duplicates from silva database
+rRNA_bact: /snakevirome/ref_seq_bacterial_Diptere_rRNA_r132/rRNA_silva_bacteria.fa
+# # Dipetera Ribosomal RNA sequence from silva database without sequence with viral homology (blastn against ntvir)
+rRNA_host: /snakevirome/ref_seq_bacterial_Diptere_rRNA_r132/rRNA_no_vir_hit_diptera.fasta
+# # Number of threads to use for mapping and assembly jobs
+threads: 1
+#Diamond-specific protein database built from NCBI nrvir database
+base_nr_vir: /snakevirome/Diamond_db/nrvir_diamond.dmnd
+#Diamond-specific protein database built from NCBI nr database
+base_nr: /snakevirome/Diamond_db/nrvir_diamond.dmnd
+#File joining sequence IDs to taxonomic ids
+base_taxo: /snakevirome/taxonomic_ref/prot.accession2taxid.gz
+# #Path to external scipts
+Scripts: /snakevirome/scripts/
+# #Custom Viral reference taxonomy
+ref_taxo: /snakevirome/taxonomic_ref/Shi16_Virome_clade_list_SG_PG_2017.csv
+#ICTV Viral reference taxonomy
+ICTV_taxo: /snakevirome/taxonomic_ref/ICTV_taxo_2017.csv
+#Host reference taxonomy
+host_taxo: /snakevirome/taxonomic_ref/Virus_Host_DB_2017.csv
+
+#TO DO FOR RUNNING
+# ln -s /gs7k1/projects/CMAEE/share/Snakevir/snakefile /home/exbrayat/work/Tuto/
+# Load python for running snakemake
+# module load system/python/3.4.3
+# Command line to run the script
+# snakemake -s snakefile  --cluster "qsub -q bigmem.q -V -cwd -pe parallel_smp" --jobs 100

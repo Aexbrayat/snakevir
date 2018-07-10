@@ -4,24 +4,23 @@ From: continuumio/miniconda3
 # sudo singularity build snakemake Singularity
 
 %files
-    snakemake_tutorial.scif
+    snakevir.scif
     Snakefile
     config.yaml
-    complet_taxo.sh
 
 %environment
     PATH=/opt/conda/bin:$PATH
     export PATH
 
 %post
-    apt-get update && apt-get -y install build-essential valgrind time python-numpy python-qt4 python-lxml python-six python-dev
+    apt-get update && apt-get -y install build-essential valgrind time python-numpy python-dev python-qt4 python-lxml python-six
     /opt/conda/bin/conda config --add channels defaults
     /opt/conda/bin/conda config --add channels conda-forge
     /opt/conda/bin/conda config --add channels bioconda
 
     # Install scif and scif-apps
     /opt/conda/bin/pip install scif
-    /opt/conda/bin/scif install /snakemake_tutorial.scif
+    /opt/conda/bin/scif install /snakevir.scif
 
     # Install snakemake
     /opt/conda/bin/pip install snakemake==4.4.0

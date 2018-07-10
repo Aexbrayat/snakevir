@@ -17,128 +17,180 @@
 %apprun cutadapt
    cd $SCIF_DATA
    exec cutadapt "$@"
+%apphelp cutadapt
+Cutadapt finds and removes adapter sequences, primers, poly-A tails and other types of unwanted sequence from your high-throughput sequencing reads.
 %applabels cutadapt
    VERSION 1.16
-
-%apprun fastqCombinePairedEnd
-    if [ ! -e "${SCIF_DATA}/scripts/fastqCombinePairedEnd.py" ]; then
-        echo "Copying fastqCombinePairedEnd.py to $SCIF_DATA/scripts/"
-        cp ${SCIF_APPROOT}}/scripts/fastqCombinePairedEnd.py ${SCIF_DATA}}/scripts fastqCombinePairedEnd.py
-    fi
-    cd $SCIF_DATA
-    exec python2.7 ${SCIF_DATA}/scripts/fastqCombinePairedEnd.py
-%apphelp fastqCombinePairedEnd
-    Resynchronize 2 fastq or fastq.gz files (R1 and R2) after they have been trimmed and cleaned
-    WARNING! This program assumes that the fastq file uses EXACTLY four lines per
-    sequence
-    Three output files are generated. The first two files contain the reads of the
-    pairs that match and the third contains the solitary reads.
-%applabels fastqCombinePairedEnd
-    VERSION 12/04/2017
-    URL https://github.com/enormandeau/Scripts/blob/master/fastqCombinePairedEnd.py	
+   URL http://cutadapt.readthedocs.io/en/stable/
+%apptest cutadapt
+   exec cutadapt
 
 %appinstall ete3
-    /opt/conda/bin/conda install -c etetoolkit ete3
-    /opt/conda/bin/python - <<EOF
-from ete3 import NCBITaxa
-ncbi = NCBITaxa()
-ncbi.update_taxonomy_database()
+    /opt/conda/bin/conda install -c etetoolkit ete3=3.1.1
 %apphelp ete3
-  ete3 is a Python programming toolkit that assists in the automated manipulation, analysis and visualization of phylogenetic trees. In this pipeline we use mainly the NCBITaxa module to deal with the NCBI Taxonomy database
+    ete3 is a Python programming toolkit that assists in the automated manipulation, analysis and visualization of phylogenetic trees. 
+    In this pipeline we use mainly the NCBITaxa module to deal in local with the NCBI Taxonomy database.
 %apprun ete3
     cd $SCIF_DATA
     exec ete3 "$@"
 %applabels ete3
     VERSION 3.11
+    URL http://etetoolkit.org/
+%apptest ete3
+   exec ete3
 	
 %appinstall edirect
-    /opt/conda/bin/conda install -c bioconda entrez-direct
+    /opt/conda/bin/conda install -c bioconda entrez-direct=7.70
 %apphelp edirect
-    EDirect provides access to the NCBI's suite of interconnected database
+    EDirect provides access to the NCBI's suite of interconnected database.
 %apprun edirect
     cd $SCIF_DATA
     exec edirect "$@"
 %applabels edirect
+    VERSION 7.70
+    URL https://www.ncbi.nlm.nih.gov/books/NBK179288/
+%apptest edirect
+   exec edirect
 
 %appinstall bwa
     /opt/conda/bin/conda install -c bioconda bwa=0.7.15
 %apphelp bwa
+    BWA is a software package for mapping low-divergent sequences against a large reference genome.
 %apprun bwa
     cd $SCIF_DATA
     exec bwa "$@"
 %applabels bwa
+    VERSION 0.7.15
+    URL http://bio-bwa.sourceforge.net/
+%apptest bwa
+   exec bwa
 
 %appinstall samtools
     /opt/conda/bin/conda install -c bioconda samtools=1.3
 %apphelp samtools
+    SAM Tools provide various utilities for manipulating alignments in the SAM format, including sorting, merging, indexing and generating alignments in a per-position form.
 %apprun samtools
     cd $SCIF_DATA
     exec samtools "$@"
 %applabels samtools
+    VERSION 1.3
+    URL http://samtools.sourceforge.net/
+%apptest samtools
+   exec samtools
 
 %appinstall java
     /opt/conda/bin/conda install -c bioconda java-jdk
 %apphelp java
-%apprun java
-%applabels java
+   Java is needed for such tools as picard
 
 %appinstall picard
     /opt/conda/bin/conda install -c bioconda picard=2.18.7
 %apphelp picard
+    Picard is a set of command line tools for manipulating high-throughput sequencing (HTS) data and formats such as SAM/BAM/CRAM and VCF.
 %apprun picard
     cd $SCIF_DATA
     exec picard "$@"
 %applabels picard
+    VERSION 2.18.7
+    URL https://broadinstitute.github.io/picard/
+%apptest picard
+   exec picard
 
 %appinstall flash2
     /opt/conda/bin/conda install -c bioconda flash2=2.2.00
 %apphelp flash2
+    FLASH (Fast Length Adjustment of SHort reads) is a very fast and accurate software tool to merge paired-end reads from next-generation sequencing experiments.
 %apprun flash2
     cd $SCIF_DATA
     exec flash2 "$@"
 %applabels flash2
- 
+    VERSION 2.2.00
+    URL https://ccb.jhu.edu/software/FLASH/
+%apptest flash2
+   exec flash2
+
 %appinstall megahit
     /opt/conda/bin/conda install -c bioconda megahit=1.1.2
 %apphelp megahit
+   MEGAHIT is a single node assembler for large and complex metagenomics NGS reads, such as soil. It makes use of succinct de Bruijn graph (SdBG) to achieve low memory assembly.
 %apprun megahit
     cd $SCIF_DATA
     exec megahit "$@"
 %applabels megahit
+    VERSION 1.1.2
+    URL https://github.com/voutcn/megahit
+%apptest megahit
+   exec megahit
 
 %appinstall cap3
-    /opt/conda/bin/conda install -c bioconda cap3
+    /opt/conda/bin/conda install -c bioconda cap3=10.2011
 %apphelp cap3
+   CAP3 has a capability to clip 5′ and 3′ low-quality regions of reads. It uses base quality values in computation of overlaps between reads, construction of multiple sequence alignments of reads, and generation of consensus sequences
 %apprun cap3
     cd $SCIF_DATA
     exec cap3 "$@"
 %applabels cap3
-
-%appinstall seqtk
-    /opt/conda/bin/conda install -c bioconda seqtk
-%apphelp seqtk
-%apprun seqtk
-    cd $SCIF_DATA
-    exec seqtk "$@"
-%applabels seqtk
+    VERSION 10.2011   
+    URL https://www.ncbi.nlm.nih.gov/pmc/articles/PMC310812/
+%apptest cap3
+   exec cap3
 
 %appinstall taxonkit
-    /opt/conda/bin/conda install -c bioconda taxonkit 
+    /opt/conda/bin/conda install -c bioconda taxonkit=0.2.4
 %apphelp taxonkit
+    TaxonKit - Cross-platform and Efficient NCBI Taxonomy Toolkit.
 %apprun taxonkit
     cd $SCIF_DATA
-    exec seqtk "$@"
+    exec taxonkit "$@"
 %applabels taxonkit
+    VERSION 0.2.4   
+    URL https://bioinf.shenwei.me/taxonkit/
+%apptest taxonkit
+   exec taxonkit
 
+%appinstall seqkit
+    /opt/conda/bin/conda install -c bioconda seqkit=0.8.1
+%apphelp seqkit
+    SeqKit - a cross-platform and ultrafast toolkit for FASTA/Q file manipulation
+%apprun seqkit
+    cd $SCIF_DATA
+    exec seqkit "$@"
+%applabels seqkit
+    VERSION 0.8.1   
+    URL https://bioinf.shenwei.me/seqkit/
+%apptest seqkit
+   exec seqkit
+
+%appinstall csvtk
+    /opt/conda/bin/conda install -c bioconda csvtk=0.14.0
+%apphelp csvtk
+    csvtk - a cross-platform, efficient and practical CSV/TSV toolkit. 
+%apprun csvtk
+    cd $SCIF_DATA
+    exec csvtk "$@"
+%applabels csvtk
+    VERSION 0.14.0  
+    URL https://bioinf.shenwei.me/csvtk/
+%apptest csvtk
+   exec csvtk
+
+
+%appinstall R
+    /opt/conda/bin/conda install -c r r=3.4.3
 
 %appinstall diamond
     /opt/conda/bin/conda install -c bioconda diamond=0.9.22
     conda clean -tpy
 %apphelp diamond
+    DIAMOND is a sequence aligner for protein and translated DNA searches, designed for high performance analysis of big sequence data
 %apprun diamond
     cd $SCIF_DATA
     exec diamond "$@"
 %applabels diamond
+    VERSION 0.9.22  
+    URL https://github.com/bbuchfink/diamond/
+%apptest diamond
+   exec diamond
 
 %apprun snakemake
     /opt/conda/bin/scif run setup

@@ -39,6 +39,15 @@ Cutadapt finds and removes adapter sequences, primers, poly-A tails and other ty
 %apptest ete3
    exec ete3
 	
+%appinstall etedatabase
+python <<END
+from ete3 import NCBITaxa
+ncbi = NCBITaxa()
+ncbi.update_taxonomy_database()
+END
+
+
+
 %appinstall edirect
     /opt/conda/bin/conda install -c bioconda entrez-direct=7.70
 %apphelp edirect
@@ -173,7 +182,6 @@ Cutadapt finds and removes adapter sequences, primers, poly-A tails and other ty
     URL https://bioinf.shenwei.me/csvtk/
 %apptest csvtk
    exec csvtk
-
 
 %appinstall R
     /opt/conda/bin/conda install -c r r=3.4.3

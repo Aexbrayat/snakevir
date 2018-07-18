@@ -27,6 +27,10 @@ From: continuumio/miniconda3
     /opt/conda/bin/pip install docutils==0.14
     /opt/conda/bin/pip install biopython
     /opt/conda/bin/pip install pandas
+    /opt/conda/bin/python - <<EOF
+from ete3 import NCBITaxa
+ncbi = NCBITaxa()
+ncbi.update_taxonomy_database()
 
 %runscript
     PATH=/opt/conda/bin:$PATH

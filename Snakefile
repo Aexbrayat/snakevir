@@ -43,12 +43,15 @@ if NBREADS != 2*NBSAMPLES:
 rule all:
 	input:
 		# "/Coverage/lineage_revise_stats_"+RUN+".csv",
-		expand("logs/insert_size/{smp}_insert_size_metrics_"+RUN+".txt", smp=SAMPLES),
-		expand("logs/logs_coverage/{smp}_coverage_"+RUN+".txt", smp=SAMPLES),
-		expand("logs/logs_contaminent/Stats_contaminent_{smp}.txt", smp=SAMPLES),
-		"logs/Summary_log_"+RUN+".csv",
-		"logs/logsAssembly/"+RUN+"_Assembly.log",
+		# expand("logs/insert_size/{smp}_insert_size_metrics_"+RUN+".txt", smp=SAMPLES),
+		# expand("logs/logs_coverage/{smp}_coverage_"+RUN+".txt", smp=SAMPLES),
+		# expand("logs/logs_contaminent/Stats_contaminent_{smp}.txt", smp=SAMPLES),
 		# "logs/Summary_log_"+RUN+".csv",
+		# "logs/logsAssembly/"+RUN+"_Assembly.log",
+		# "logs/Summary_log_"+RUN+".csv",
+		# "Coverage/lineage_revise_results_by_ids_"+RUN+".csv",
+		expand("logs/insert_size/{smp}_insert_size_metrics_"+RUN+".txt", smp=SAMPLES),
+		"logs/Summary_log_"+RUN+".csv"
 
 # Remove sequencing adapters based on 5' and 3' sequences (A3 and A5 in the config.yaml file)
 rule Remove_sequencing_adapters:
@@ -388,10 +391,10 @@ rule Sort_bam_mapped:
 		"MappingOnAssembly/sort_{smp}_pairs_on_{RUN}.bam"
 	shell:
 		"""
-		scif --quiet run samtools sort {input} > {output}
+		samtools sort {input} > {output}
 		"""
 
-#Use the mapping to determine the insert sizes
+# Use the mapping to determine the insert sizes
 rule get_insert_size_metric:
 	input:
 		"MappingOnAssembly/sort_{smp}_pairs_on_{RUN}.bam"
@@ -409,7 +412,7 @@ rule Mapping_information:
 		"MappingOnAssembly/{smp}_on_{RUN}.bam",
 	output:
 		"logs/{smp}_{RUN}_stats_mapping_assembly.txt",
-	threads: 1
+	threads: 4
 	shell:
 		"""
 		scif --quiet run samtools flagstat {input} -o {output};
@@ -422,7 +425,7 @@ rule Quantify_contigs_coverage:
 	output:
 		mapped= "CountsMapping/{smp}_counts_contigs_{RUN}.mat",
 		Unmapped="CountsMapping/{smp}_counts_unmapped_{RUN}.mat",
-	threads: 1
+	threads: 4
 	shell:
 		"""
 		scif --quiet run samtools view -F 0x904 {input}| cut -f 3 | sort | uniq -c - > {output.mapped};
@@ -451,11 +454,11 @@ rule Extract_filtered_Umapped_on_contigs:
 	output:
 		unflash="Unmapped/{smp}_unflash_unmapped_{RUN}.fa",
 		flash="Unmapped/{smp}_flash_unmapped_{RUN}.fa",
-	threads: 1
+	threads: 4
 	shell:
 		"""
-		samtools view -b -hf 0x4 {input.unflash} |scif --quiet run  samtools bam2fq - | scif --quiet run seqtk seq -A - > {output.unflash};
-		samtools view -b -hf 0x4 {input.flash} | scif --quiet run  samtools bam2fq - | scif --quiet run seqtk seq -A - > {output.flash};
+		samtools view -b -hf 0x4 {input.unflash} |scif --quiet run  samtools bam2fq - | scif --quiet run seqkit fq2fa - -o {output.unflash};
+		samtools view -b -hf 0x4 {input.flash} | scif --quiet run  samtools bam2fq - | scif --quiet run  seqkit fq2fa - -o {output.flash};
 		"""
 
 #First step of alignment of contigs  with diamond on viral protein database.
@@ -467,10 +470,10 @@ rule Blast_contigs_on_nr_vir:
 	params:
 		blastDBpath=base_nr_vir,
 		basetaxoDBpath=base_taxo,
-	threads: 5
+	threads: 4
 	shell:
 		"""
-		scif --quiet run diamond blastx -b 1 -d {params.blastDBpath} --sensitive --query {input} --max-hsps 1 --max-target-seqs 1  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output};
+		scif --quiet run diamond blastx -b 10 -d {params.blastDBpath} --sensitive --query {input} --max-hsps 1 --max-target-seqs 1  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output};
 		"""
 
 #First step of alignment of reads (unassembled) with diamond on viral protein database.
@@ -484,19 +487,19 @@ rule Blast_unmapped_on_nr_vir:
 	params:
 		blastDBpath=base_nr_vir,
 		basetaxoDBpath=base_taxo,
-	threads: 5
+	threads: 4
 	shell:
 		"""
 		if [ -s {input.unflash} ]
 		then
-			scif --quiet run diamond blastx -b 1 -d {params.blastDBpath} --sensitive --query {input.unflash} --max-hsps 1 --max-target-seqs 1 --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output.unflash};
+			scif --quiet run diamond blastx -b 10 -d {params.blastDBpath} --sensitive --query {input.unflash} --max-hsps 1 --max-target-seqs 1 --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output.unflash};
 		else
 			echo "{input.unflash} is empty."
 			touch {output.unflash}
 		fi
 		if [ -s {input.flash} ]
 		then
-			scif --quiet run diamond blastx -b 1 -d {params.blastDBpath} --sensitive --query {input.flash} --max-hsps 1 --max-target-seqs 1 --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output.flash};
+			scif --quiet run diamond blastx -b 10 -d {params.blastDBpath} --sensitive --query {input.flash} --max-hsps 1 --max-target-seqs 1 --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output.flash};
 		else
 			echo "{input.flash} is empty."
 			touch {output.flash}
@@ -546,7 +549,7 @@ rule Blast_contigs_on_nr:
 		basetaxoDBpath=base_taxo,
 	shell:
 		"""
-		scif --quiet run diamond  blastx -d {params.blastDBpath} --sensitive --query {input} --max-hsps 1 --max-target-seqs 5  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output};
+		scif --quiet run diamond  blastx -b 10 -d {params.blastDBpath} --sensitive --query {input} --max-hsps 1 --max-target-seqs 5  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output};
 		"""
 
 #Second step of alignment of reads (unassembled) with diamond on generalist protein database.
@@ -565,14 +568,14 @@ rule Blast_unmapped_on_nr:
 		"""
 		if [ -s {input.hit_unflash} ]
 		then
-			scif --quiet run diamond blastx -d {params.blastDBpath} --sensitive --query {input.hit_unflash} --max-hsps 1 --max-target-seqs 5  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output.unflash};
+			scif --quiet run diamond blastx  -b 10 -d {params.blastDBpath} --sensitive --query {input.hit_unflash} --max-hsps 1 --max-target-seqs 5  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output.unflash};
 		else
 			echo "{input.hit_unflash} is empty."
 			touch {output.unflash}
 		fi
 		if [ -s {input.hit_flash} ]
 		then
-			scif --quiet run diamond blastx -d {params.blastDBpath} --sensitive --query {input.hit_flash} --max-hsps 1 --max-target-seqs 5  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output.flash};
+			scif --quiet run diamond blastx -b 10 -d {params.blastDBpath} --sensitive --query {input.hit_flash} --max-hsps 1 --max-target-seqs 5  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output.flash};
 		else
 			echo "{input.hit_flash} is empty."
 			touch {output.flash}

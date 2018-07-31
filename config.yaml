@@ -14,15 +14,15 @@ A3: CAGCGGACGCCTATGTGATG
 A5: CATCACATAGGCGTCCGCTG
 # Path to host sequences
 # Bacterial Ribosomal RNA sequence without duplicates from silva database
-filter_2: /snakevirome/ref_seq_bacterial_Diptere_rRNA_r132/rRNA_silva_bacteria.fa
+filter_2: /home/aexbrayat/save/ref/rRNA_silva_bacteria.fasta
 # # Dipetera Ribosomal RNA sequence from silva database without sequence with viral homology (blastn against ntvir)
-filter_1: /snakevirome/ref_seq_bacterial_Diptere_rRNA_r132/rRNA_no_vir_hit_diptera.fasta
+filter_1: /home/aexbrayat/save/ref/rRNA_no_vir_hit_diptera.fasta
 # # Number of threads to use for mapping and assembly jobs
-threads: 1
+threads: 4
 #Diamond-specific protein database built from NCBI nrvir database
-base_nr_vir: /snakevirome/Diamond_db/nrvir_diamond.dmnd
+base_nr_vir: /home/aexbrayat/save/ref/nr_vir_diamond.dmnd
 #Diamond-specific protein database built from NCBI nr database
-base_nr: /snakevirome/Diamond_db/nrvir_diamond.dmnd
+base_nr: /home/aexbrayat/save/ref/nr_diamond.dmnd
 #File joining sequence IDs to taxonomic ids
 base_taxo: /snakevirome/taxonomic_ref/prot.accession2taxid.gz
 # #Path to external scipts

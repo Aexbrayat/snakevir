@@ -1,5 +1,3 @@
-#!/usr/local/bioinfo/python/2.7.9_build2/bin/python
-# -*- coding: utf-8 -*-
 import sys, os
 from collections import Counter
 import pandas as pd
@@ -35,9 +33,8 @@ for input_files in path_files :
 		file_name=input_files.split(ext)[0]
 		csv_columns.append(file_name)
 		list_files.append(file_name)
-
 for files_name in list_files :
-	with open("logs/logscutadapt/"+files_name+"_1_rm_seq_adpt.log",'r') as cut1_1:
+	with open("logs/logscutadapt/"+files_name+"_R1_cut1.log",'r') as cut1_1:
 		for line in cut1_1:
 			if "Total reads processed" in line:
 				c = line.replace(',','').replace(' ','').replace('\n','').split(":")
@@ -45,7 +42,7 @@ for files_name in list_files :
 			if "Total written" in line:
 				c1 = line.replace(',','').replace('b',':').replace('\n','').replace(' ','').split(":")
 				dict_data[2][files_name]="%.2f" % (int(c1[1])/int(c[-1]))
-	with open("logs/logscutadapt/"+files_name+"_2_rm_seq_adpt.log",'r') as cut1_2:
+	with open("logs/logscutadapt/"+files_name+"_R2_cut1.log",'r') as cut1_2:
 		for line in cut1_2:
 			if "Total reads processed" in line:
 				c = line.replace(',','').replace(' ','').replace('\n','').split(":")
@@ -53,7 +50,7 @@ for files_name in list_files :
 			if "Total written" in line:
 				c1 = line.replace(',','').replace('b',':').replace('\n','').replace(' ','').split(":")
 				dict_data[3][files_name]="%.2f" % (int(c1[1])/int(c[-1]))
-	with open("logs/logscutadapt/"+files_name+"_1_qtrim.log",'r') as cut2_1:
+	with open("logs/logscutadapt/"+files_name+"_R1_cut2.log",'r') as cut2_1:
 		for line in cut2_1:
 			if "Reads written" in line:
 				c = line.replace(',','').replace('(',':').replace('\n','').replace(' ','').split(":")
@@ -61,7 +58,7 @@ for files_name in list_files :
 			if "Total written" in line:
 				c1 = line.replace(',','').replace('b',':').replace('\n','').replace(' ','').split(":")
 				dict_data[6][files_name]="%.2f" % (int(c1[1])/int(c[2]))
-	with open("logs/logscutadapt/"+files_name+"_2_qtrim.log",'r') as cut2_2:
+	with open("logs/logscutadapt/"+files_name+"_R2_cut2.log",'r') as cut2_2:
 		for line in cut2_2:
 			if "Reads written" in line:
 				c = line.replace(',','').replace('(',':').replace('\n','').replace(' ','').split(":")
@@ -76,7 +73,7 @@ for files_name in list_files :
 			if "LIBRARY	READ_GROUP" in line:
 				line = next(insert)
 				c = line.split("\t")
-				dict_data[8][files_name]="%.2f" % (float(c[5]))
+				dict_data[8][files_name]="%.2f" % (float(c[4]))
 
 	with open("logs/logsFLASH/"+files_name+"_flash.log",'r') as flash:
 		for line in flash:
@@ -86,6 +83,7 @@ for files_name in list_files :
 			if "Combined pairs" in line:
 				c = line.replace('\n','').replace(' ','').split(":")
 				dict_data[14][files_name]=int(c[1])
+
 	path="logs/logs_coverage/"+files_name+"_coverage_*"
 	files_cov=glob.glob(path)
 	with open(files_cov[0],'r') as cov:
@@ -101,7 +99,7 @@ for files_name in list_files :
 				dict_data[18][files_name]=int(c[1])
 	with open("logs/logs_contaminent/Stats_contaminent_"+files_name+".txt",'r') as conta:
 		for line in conta:
-			if "filter1_pair_R1" in line:
+			if "Host_pair_R1" in line:
 				c = line.replace('\n','').split(":")
 				R1_h=c[1]
 				line = next(conta)
@@ -131,7 +129,6 @@ for files_name in list_files :
 				dict_data[i]['All-sample']=round((float(dict_data[i][files_name])), 2)
 			else:
 				dict_data[i]['All-sample']= round((float(dict_data[i]['All-sample']+float(dict_data[i][files_name]))/2), 2)
-#
 	df = pd.read_csv(stats_id, delimiter='\t')
 	stat_vir=df[files_name] != 0
 	df1=(df[stat_vir].family.value_counts())

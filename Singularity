@@ -13,6 +13,7 @@ From: continuumio/miniconda3
     export PATH
 
 %post
+    mkdir -p /samples /data /snakevirome
     apt-get update && apt-get -y install build-essential valgrind time python-numpy python-dev python-qt4 python-lxml python-six
     /opt/conda/bin/conda config --add channels defaults
     /opt/conda/bin/conda config --add channels conda-forge

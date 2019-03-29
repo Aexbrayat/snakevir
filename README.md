@@ -2,7 +2,7 @@ snakevir
 
 Authors
 
-Etienne Loire (CIRAD) & Antoni Exbrayat (CIRAD) & Serafin Gutierrez (CIRAD)
+Antoni Exbrayat (CIRAD) & Etienne Loire (CIRAD) & Serafin Gutierrez (CIRAD)
 Purpose:
 
 Metagenomic analysis of viral samples

@@ -12,7 +12,10 @@ input2 = RIGHT fastq or fastq.gz file (R2)
 separator = character that separates the name of the read from the part that
     describes if it goes on the left or right, usually with characters '1' or
     '2'.  The separator is often a space, but could be another character. A
-    space is used by default.
+    space is used by default. If the sequence names do not contain two parts
+    and you want to use the full name info to pair your sequences, use 'None'
+    (as text) for the separator. Eg:
+        python fastqCombinePairedEnd.py input1 input2 None
 """
 
 # Importing modules
@@ -24,12 +27,15 @@ try:
     in1 = sys.argv[1]
     in2 = sys.argv[2]
 except:
-    print (__doc__)
+    print(__doc__)
     sys.exit(1)
-out1f = sys.argv[3]
-out2f = sys.argv[4]
-out3f = sys.argv[5]
-separator = " "
+
+try:
+    separator = sys.argv[3]
+    if separator == "None":
+        separator = None
+except:
+    separator = " "
 
 # Defining classes
 class Fastq(object):
@@ -66,12 +72,13 @@ def myopen(infile, mode="r"):
 def fastq_parser(infile):
     """Takes a fastq file infile and returns a fastq object iterator
     """
-
+    
     with myopen(infile) as f:
         while True:
             name = f.readline().strip()
             if not name:
                 break
+
             seq = f.readline().strip()
             name2 = f.readline().strip()
             qual = f.readline().strip()
@@ -86,9 +93,14 @@ if __name__ == "__main__":
     s1_finished = False
     s2_finished = False
 
-    with myopen(out1f, "w") as out1:
-        with myopen(out2f, "w") as out2:
-            with myopen(out3f, "w") as out3:
+    if in1.endswith('.gz'): 
+    	outSuffix='.fastq.gz'
+    else:
+    	outSuffix='.fastq'
+    	
+    with myopen(in1 + "_pairs_R1" + outSuffix, "w") as out1:
+        with myopen(in2 + "_pairs_R2" + outSuffix, "w") as out2:
+            with myopen(in1 + "_singles" + outSuffix, "w") as out3:
                 while not (s1_finished and s2_finished):
                     try:
                         s1 = seq1.next()
@@ -104,6 +116,7 @@ if __name__ == "__main__":
                         seq1_dict[s1.getShortname(separator)] = s1
                     if not s2_finished:
                         seq2_dict[s2.getShortname(separator)] = s2
+
                     if not s1_finished and s1.getShortname(separator) in seq2_dict:
                         seq1_dict[s1.getShortname(separator)].write_to_file(out1)
                         seq1_dict.pop(s1.getShortname(separator))
@@ -115,6 +128,7 @@ if __name__ == "__main__":
                         seq2_dict.pop(s2.getShortname(separator))
                         seq1_dict[s2.getShortname(separator)].write_to_file(out1)
                         seq1_dict.pop(s2.getShortname(separator))
+                        
                 # Treat all unpaired reads
                 for r in seq1_dict.values():
                     r.write_to_file(out3)

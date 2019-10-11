@@ -200,6 +200,20 @@ END
 %apptest diamond
    exec diamond
 
+%appinstall bioawk
+    /opt/conda/bin/conda install -c bioconda bioawk=1.0
+    conda clean -tpy
+%apphelp bioawk
+    Bioawk is an extension to Brian Kernighan's awk, adding the support of several common biological data formats
+%apprun bioawk
+    cd $SCIF_DATA
+    exec bioawk  "$@"
+%applabels bioawk
+    VERSION 1.0 
+    URL https://github.com/lh3/bioawk
+%apptest bioawk
+   exec bioawk
+
 %apprun snakemake
     /opt/conda/bin/scif run setup
     cd ${SCIF_DATA}

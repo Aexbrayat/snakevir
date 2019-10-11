@@ -15,7 +15,7 @@ datadir = config["fastq"]
 scriptdir = config["Scripts"]
 filter_2=config["filter_2"]
 filter_1=config["filter_1"]
-base_nr_vir = config["base_nr_vir"]
+use_filter2=config["use_filter2"]
 base_nr = config["base_nr"]
 base_taxo = config["base_taxo"]
 
@@ -25,14 +25,14 @@ ext=config["ext"]
 
 READS, =  glob_wildcards(datadir+"{readfile}"+ext)
 SAMPLES, = glob_wildcards(datadir+"{sample}"+ext_R1+ext)
-message(str(READS))
+message(str(use_filter2))
 NBSAMPLES = len(SAMPLES)
 NBREADS = len(READS)
 ref_taxo=config["ref_taxo"]
+ref_taxo1=config["ref_taxo1"]
 ICTV_taxo=config["ICTV_taxo"]
 host_taxo=config["host_taxo"]
 RUN = config["run"]
-THREADS = config["threads"]
 message(str(NBSAMPLES)+" samples  will be analysed")
 message(str(len(READS))+" fastq files  will be processed")
 message("Run name: "+RUN)
@@ -43,61 +43,63 @@ if NBREADS != 2*NBSAMPLES:
 rule all:
 	input:
 		# "/Coverage/lineage_revise_stats_"+RUN+".csv",
-		# expand("logs/insert_size/{smp}_insert_size_metrics_"+RUN+".txt", smp=SAMPLES),
-		# expand("logs/logs_coverage/{smp}_coverage_"+RUN+".txt", smp=SAMPLES),
-		# expand("logs/logs_contaminent/Stats_contaminent_{smp}.txt", smp=SAMPLES),
-		# "logs/Summary_log_"+RUN+".csv",
-		# "logs/logsAssembly/"+RUN+"_Assembly.log",
-		# "logs/Summary_log_"+RUN+".csv",
-		# "Coverage/lineage_revise_results_by_ids_"+RUN+".csv",
 		expand("logs/insert_size/{smp}_insert_size_metrics_"+RUN+".txt", smp=SAMPLES),
-		"logs/Summary_log_"+RUN+".csv"
+		expand("logs/logs_coverage/{smp}_coverage_"+RUN+".txt", smp=SAMPLES),
+		expand("logs/logs_contaminent/Stats_contaminent_{smp}.txt", smp=SAMPLES),
+		"logs/Summary_log_"+RUN+".csv",
+		"logs/logsAssembly/"+RUN+"_Assembly.log",
+		"logs/Summary_log_"+RUN+".csv",
+		expand("FiltersMapping/unmapped_{smp}_filter2_widows.sam", smp=SAMPLES),
 
 # Remove sequencing adapters based on 5' and 3' sequences (A3 and A5 in the config.yaml file)
 rule Remove_sequencing_adapters:
 	input:
-		datadir+"{readfile}"+ext,
+		R1=datadir+"{smp}"+ ext_R1+ext,
+		R2=datadir+"{smp}"+ ext_R2+ext,
 	output:
-		"cutadaptfiles/{readfile}.trimmed.fastq",
+		R1="cutadaptfiles/{smp}_1.trimmed.fastq",
+		R2="cutadaptfiles/{smp}_2.trimmed.fastq",
 	log:
-		"logs/logscutadapt/{readfile}_rm_seq_adpt.log",
+		"logs/logscutadapt/{smp}_cut1.log",
 	params:
 		A3 = config["A3"],
 		A5 = config["A5"],
 	shell:
 		"""
-		scif --quiet run cutadapt  -n 10 -g {params.A5} -a {params.A3} --overlap 15 {input} -o {output} &> {log}
+		scif --quiet run cutadapt -n 10 -g {params.A5} -a {params.A3} --overlap 15  -o {output.R1} -p {output.R2}  {input.R1} {input.R2} &> {log}
 		"""
 # Quality trimming based on the --quality-cutoff (low-quality ends) -q parameter to change the cutoff
 # and --minimum-length -m option to Discard processed reads that are shorter than the length specified.
 rule Quality_trimming:
 	input:
-		"cutadaptfiles/{readfile}.trimmed.fastq"
+		R1="cutadaptfiles/{smp}_1.trimmed.fastq",
+		R2="cutadaptfiles/{smp}_2.trimmed.fastq",
 	output:
-		"cutadaptfiles/{readfile}.clean.fastq"
+		R1="cutadaptfiles/{smp}_1.clean.fastq",
+		R2="cutadaptfiles/{smp}_2.clean.fastq",
 	log:
-		"logs/logscutadapt/{readfile}_qtrim.log"
+		"logs/logscutadapt/{smp}_cut2.log"
 	shell:
 		"""
-		scif run cutadapt -q 30,30 -m 40 -o {output} {input} &> {log}
+		scif run cutadapt -q 30,30 -m 40 -o {output.R1} -p {output.R2} {input.R1} {input.R2} &> {log}
 		"""
 
 # Resynchronize 2 fastq or fastq.gz files (R1 and R2) after they have been trimmed and cleaned.
 rule Repair_Pairs:
 	input:
-		R1="cutadaptfiles/{smp}"+ext_R1+".clean.fastq",
-		R2="cutadaptfiles/{smp}"+ext_R2+".clean.fastq"
+		R1="cutadaptfiles/{smp}_1.clean.fastq",
+		R2="cutadaptfiles/{smp}_2.clean.fastq",
 	output:
-		R1="cutadaptfiles/{smp}_fastq_pairs_R1.fastq",
-		R2="cutadaptfiles/{smp}_fastq_pairs_R2.fastq",
-		WI="cutadaptfiles/{smp}_fastq_widows.fastq"
+		R1="cutadaptfiles/{smp}_1.clean.fastq_pairs_R1.fastq",
+		R2="cutadaptfiles/{smp}_2.clean.fastq_pairs_R2.fastq",
+		WI="cutadaptfiles/{smp}_1.clean.fastq_singles.fastq"
 	params:
 		scriptdir+"fastqCombinePairedEnd.py"
 	log:
 		"logs/logsRepairspairs/{smp}_repair.log"
 	shell:
 		"""
-		python2.7 {params} {input.R1} {input.R2} {output.R1} {output.R2} {output.WI} 2> {log}
+		python2 {params} {input.R1} {input.R2}  2> log
 		"""
 
 # Filter_1-homologous sequences cleaning by mapping (bwa) on ribosomal sequences.
@@ -117,7 +119,7 @@ rule Map_On_filter_1:
 	log:
 		pairs="/scif/data/logs/logsMapFilters/{smp}_bwa_pairs_on_filter1.log",
 		WI="/scif/data/logs/logsMapFilters/{smp}_bwa_widows_on_filter1.log"
-	threads: THREADS
+	threads: 5
 	shell:
 		"""
 		if [ -s {input.R1} ] && [ -s {input.R2} ]
@@ -145,7 +147,7 @@ rule Extract_Unmapped_filter1_Reads:
 	output:
 		pairs_R1="FilteredFastq/filtered_filter1_{smp}_R1.fastq",
 		pairs_R2="FilteredFastq/filtered_filter1_{smp}_R2.fastq",
-		WI="FilteredFastq/filtered_filter1_{smp}_widows.fastq"
+		WI="FilteredFastq/filtered_filter1_{smp}_widows.fastq",
 	shell:
 		"""
 		if [ -s {input.sam_pairs} ]
@@ -163,6 +165,8 @@ rule Extract_Unmapped_filter1_Reads:
 			echo "{input.sam_WI} is empty."
 			touch {output.WI}
 		fi
+
+
 		"""
 # filter2-homologous sequences cleaning by mapping (bwa) on ribosomal sequences.
 rule Map_On_filter2:
@@ -179,58 +183,75 @@ rule Map_On_filter2:
 	params:
 		filter_2 = config["filter_2"],
 		filter_2_index = config["filter_2"]+".bwt",
+		use_filter2=config["use_filter2"]
 	log:
 		pairs="/scif/data/logs/logsMapFilters/{smp}_bwa_pairs_on_filter2.log",
 		WI="/scif/data/logs/logsMapFilters/{smp}_bwa_widows_on_filter2.log"
-	threads: THREADS
+	threads: 5
 	shell:
 		"""
-		if [ -s {input.R1} ] && [ -s {input.R2} ]
+		if [ "{params.use_filter2}"="yes" ]
 		then
-			scif --quiet run bwa mem -t {threads} {params.filter_2} {input.R1} {input.R2} 2> {log.pairs} | samtools view -b - | tee {output.bam_pairs} | scif run samtools view -f 0x4 -o {output.sam_pairs}
-		else
-			echo "{input.R1} or {input.R2} is empty."
-			touch {output.bam_pairs}
-			touch {output.sam_pairs}
-		fi
-		if [ -s {input.WI} ]
-		then
-		scif --quiet run bwa mem -t {threads} {params.filter_2} {input.WI} 2> {log.WI} | samtools view -b - | tee {output.bam_WI} | scif run samtools view -f 0x4 -o {output.sam_WI}
-		else
-			echo "{input.WI} is empty."
-			touch {output.bam_WI}
-			touch {output.sam_WI}
+			if [ -s {input.R1} ] && [ -s {input.R2} ]
+			then
+				scif --quiet run bwa mem -t {threads} {params.filter_2} {input.R1} {input.R2} 2> {log.pairs} | samtools view -b - | tee {output.bam_pairs} | scif run samtools view -f 0x4 -o {output.sam_pairs}
+			else
+				echo "{input.R1} or {input.R2} is empty."
+				touch {output.bam_pairs}
+				touch {output.sam_pairs}
+			fi
+			if [ -s {input.WI} ]
+			then
+			scif --quiet run bwa mem -t {threads} {params.filter_2} {input.WI} 2> {log.WI} | samtools view -b - | tee {output.bam_WI} | scif run samtools view -f 0x4 -o {output.sam_WI}
+			else
+				echo "{input.WI} is empty."
+				touch {output.bam_WI}
+				touch {output.sam_WI}
+			fi
 		fi
 		"""
 
 # Extact samples squences with with no homologous sequences with filter2.
-rule Extract_Unmapped_logsMapFilters_Reads:
+rule Extract_Unmapped_MapFilters_Reads:
 	input:
 		sam_pairs="FiltersMapping/unmapped_{smp}_filter2_pairs.sam",
-		sam_WI="FiltersMapping/unmapped_{smp}_filter2_widows.sam"
+		sam_WI="FiltersMapping/unmapped_{smp}_filter2_widows.sam",
+		R1="FilteredFastq/filtered_filter1_{smp}_R1.fastq",
+		R2="FilteredFastq/filtered_filter1_{smp}_R2.fastq",
+		WI="FilteredFastq/filtered_filter1_{smp}_widows.fastq"
 	output:
 		pairs_R1="FilteredFastq/filtered_filter2_{smp}_R1.fastq",
 		pairs_R2="FilteredFastq/filtered_filter2_{smp}_R2.fastq",
 		WI="FilteredFastq/filtered_filter2_{smp}_widows.fastq"
+
+	params:
+		use_filter2=config["use_filter2"]
+
 	shell:
 		"""
-		if [ -s {input.sam_pairs} ]
+		if [ "{params.use_filter2}"="yes" ]
 		then
-			scif --quiet run picard SamToFastq VALIDATION_STRINGENCY=SILENT I={input.sam_pairs} F={output.pairs_R1} F2={output.pairs_R2}
+			if [ -s {input.sam_pairs} ]
+			then
+				scif --quiet run picard SamToFastq VALIDATION_STRINGENCY=SILENT I={input.sam_pairs} F={output.pairs_R1} F2={output.pairs_R2}
+			else
+				echo "{input.sam_pairs} or {input.sam_WI} is empty."
+				touch {output.pairs_R1}
+				touch {output.pairs_R2}
+			fi
+			if [ -s {input.sam_WI} ]
+			then
+				scif --quiet run picard SamToFastq VALIDATION_STRINGENCY=SILENT I={input.sam_WI} F={output.WI}
+			else
+				echo "{input.sam_WI} is empty."
+				touch {output.WI}
+			fi
 		else
-			echo "{input.sam_pairs} or {input.sam_WI} is empty."
-			touch {output.pairs_R1}
-			touch {output.pairs_R2}
-		fi
-		if [ -s {input.sam_WI} ]
-		then
-			scif --quiet run picard SamToFastq VALIDATION_STRINGENCY=SILENT I={input.sam_WI} F={output.WI}
-		else
-			echo "{input.sam_WI} is empty."
-			touch {output.WI}
+			cat {input.R1} > {output.pairs_R1}
+			cat {input.R2} > {output.pairs_R2}
+			cat {input.WI} > {output.WI}
 		fi
 		"""
-
 
 # Extract some stats (logs) from the cleaning steps
 rule log_map_conta:
@@ -302,7 +323,7 @@ rule Megahit_Assembly:
 		"Assembly_results/{RUN}.contigs.fa"
 	log:
 		"logs/logsAssembly/Megahit_{RUN}.log"
-	threads: 5
+	threads: 10
 	shell:
 		"""
 		scif --quiet run megahit -t {threads}  -m 180e9  -1 {params.commaR1s} -2 {params.commaR2s} -r {params.commaPEs} -o {params.prefix} --out-prefix {RUN} --continue  2> {log}
@@ -316,7 +337,6 @@ rule Cap3_Assembly:
 		ass="Assembly_results/{RUN}_Assembly_results",
 		cont="Assembly_results/{RUN}.contigs.fa.cap.contigs",
 		sig="Assembly_results/{RUN}.contigs.fa.cap.singlets",
-	threads: THREADS
 	log:
 		"logs/logsAssembly/CAP3_{RUN}.log"
 	shell:
@@ -340,10 +360,10 @@ rule Assembly_informations:
 	input:
 		"Assembly_results/{RUN}_contigs_assembly_results.fa"
 	output:
-		"logs/logsAssembly/{RUN}_Assembly.log"
+		"logs/logsAssembly/assembly_stats_{RUN}.txt"
 	shell:
 		"""
-		cat {input} | awk '$0 ~ ">" {{print c; c=0;printf substr($0,2,100) "\t"; }} $0 !~ ">" {{c+=length($0);}} END {{ print c; }}'> {output}
+		scif --quiet run bioawk -c fastx '{{print $name, length($seq)}}' {input}  > {output}
 		"""
 
 #Indexing contigs file for later step of mapping.
@@ -354,50 +374,47 @@ rule Index_Assembly:
 		"Assembly_results/{RUN}_contigs_assembly_results.fa.bwt"
 	shell:
 		"""
-		scif --quiet run bwa index {input} > {output}
+		scif --quiet run bwa index {input}
 		"""
 #Mapping of all cleaned reads on the "Metagenome" (all contigs).
 rule Map_On_Assembly:
 	input:
-		pairs_R1="FilteredFastq/filtered_filter2_{smp}_R1.fastq",
-		pairs_R2="FilteredFastq/filtered_filter2_{smp}_R2.fastq",
-		WI="FilteredFastq/filtered_filter2_{smp}_widows.fastq",
 		R1_unflash="FilteredFastq/{smp}.notCombined_1.fastq",
 		R2_unflash="FilteredFastq/{smp}.notCombined_2.fastq",
 		flash="FilteredFastq/filtered_{smp}_merged_widows.fastq",
 		CONTIGS = "Assembly_results/{RUN}_contigs_assembly_results.fa",
 		INDEX = "Assembly_results/{RUN}_contigs_assembly_results.fa.bwt",
 	output:
-		pairs="MappingOnAssembly/{smp}_pairs_on_{RUN}.bam",
-		WI="MappingOnAssembly/{smp}_widows_on_{RUN}.bam",
 		unflash="MappingOnAssembly/{smp}_unflash_on_{RUN}.bam",
 		flash="MappingOnAssembly/{smp}_flash_on_{RUN}.bam",
+		rmdupunflash="MappingOnAssembly/rmdup/{smp}_rmdupunflash_on_{RUN}.bam",
+		rmdupflash="MappingOnAssembly/rmdup/{smp}_rmdupflash_on_{RUN}.bam",
 		merged="MappingOnAssembly/{smp}_on_{RUN}.bam",
-	threads:	THREADS
+	threads: 5
 	shell:
 		"""
-		scif --quiet run bwa mem -t {threads} {input.CONTIGS} {input.pairs_R1} {input.pairs_R2}| scif --quiet run samtools view -b -o {output.pairs}
-		bwa mem -t {threads} {input.CONTIGS} {input.WI} | scif --quiet run samtools view -b -o {output.WI}
-		scif --quiet run bwa mem -t {threads} {input.CONTIGS} {input.R1_unflash} {input.R2_unflash}| samtools view -b -o {output.unflash}
-		scif --quiet run bwa mem -t {threads} {input.CONTIGS} {input.flash} | scif --quiet run  samtools view -b -o {output.flash}
-		scif --quiet run samtools merge {output.merged} {output.flash} {output.unflash}
+		scif --quiet run bwa mem -t {threads} {input.CONTIGS} {input.R1_unflash} {input.R2_unflash}| samtools view -b - > {output.unflash}
+		scif --quiet run bwa mem -t {threads} {input.CONTIGS} {input.flash} | samtools view -b - > {output.flash}
+		scif --quiet run samtools rmdup -S  {output.unflash} - > {output.rmdupunflash}
+		scif --quiet runsamtools rmdup -S  {output.flash} - > {output.rmdupflash}
+		scif --quiet runsamtools merge {output.merged} {output.rmdupflash} {output.rmdupunflash}
 		"""
 
 #Sort bam files from the mapping.
 rule Sort_bam_mapped:
 	input:
-		"MappingOnAssembly/{smp}_pairs_on_{RUN}.bam"
+		"MappingOnAssembly/{smp}_on_{RUN}.bam",
 	output:
-		"MappingOnAssembly/sort_{smp}_pairs_on_{RUN}.bam"
+		"MappingOnAssembly/sort_{smp}_on_{RUN}.bam"
 	shell:
 		"""
-		samtools sort {input} > {output}
+		scif --quiet run samtools sort {input} > {output}
 		"""
 
-# Use the mapping to determine the insert sizes
+#Use the mapping to determine the insert sizes
 rule get_insert_size_metric:
 	input:
-		"MappingOnAssembly/sort_{smp}_pairs_on_{RUN}.bam"
+		"MappingOnAssembly/sort_{smp}_on_{RUN}.bam"
 	output:
 		metrics="logs/insert_size/{smp}_insert_size_metrics_{RUN}.txt",
 		histo="logs/insert_size/{smp}_insert_size_histo_{RUN}.pdf",
@@ -411,8 +428,7 @@ rule Mapping_information:
 	input:
 		"MappingOnAssembly/{smp}_on_{RUN}.bam",
 	output:
-		"logs/{smp}_{RUN}_stats_mapping_assembly.txt",
-	threads: 4
+		"logs/{smp}_stats_mapping_assembly_{RUN}.txt",
 	shell:
 		"""
 		scif --quiet run samtools flagstat {input} -o {output};
@@ -425,7 +441,7 @@ rule Quantify_contigs_coverage:
 	output:
 		mapped= "CountsMapping/{smp}_counts_contigs_{RUN}.mat",
 		Unmapped="CountsMapping/{smp}_counts_unmapped_{RUN}.mat",
-	threads: 4
+
 	shell:
 		"""
 		scif --quiet run samtools view -F 0x904 {input}| cut -f 3 | sort | uniq -c - > {output.mapped};
@@ -449,17 +465,17 @@ rule log_Quantify_contigs_coverage:
 # Extraction of reads which are not involved in the  contigs construction (not mapped to the metagenome).
 rule Extract_filtered_Umapped_on_contigs:
 	input:
-		unflash="MappingOnAssembly/{smp}_unflash_on_{RUN}.bam",
-		flash="MappingOnAssembly/{smp}_flash_on_{RUN}.bam",
+		rmdupunflash="MappingOnAssembly/rmdup/{smp}_rmdupunflash_on_{RUN}.bam",
+		rmdupflash="MappingOnAssembly/rmdup/{smp}_rmdupflash_on_{RUN}.bam",
 	output:
-		unflash="Unmapped/{smp}_unflash_unmapped_{RUN}.fa",
-		flash="Unmapped/{smp}_flash_unmapped_{RUN}.fa",
-	threads: 4
+		unflash="Unmapped/{smp}_unflash_unmapped_{RUN}.fastq",
+		flash="Unmapped/{smp}_flash_unmapped_{RUN}.fastq",
 	shell:
 		"""
-		samtools view -b -hf 0x4 {input.unflash} |scif --quiet run  samtools bam2fq - | scif --quiet run seqkit fq2fa - -o {output.unflash};
-		samtools view -b -hf 0x4 {input.flash} | scif --quiet run  samtools bam2fq - | scif --quiet run  seqkit fq2fa - -o {output.flash};
+		samtools view -b -hf 0x4 {input.rmdupunflash} |scif --quiet run  samtools bam2fq - | scif --quiet run seqtk seq -A - > {output.unflash};
+		samtools view -b -hf 0x4 {input.rmdupflash} | scif --quiet run  samtools bam2fq - | scif --quiet run seqtk seq -A - > {output.flash};
 		"""
+
 
 #First step of alignment of contigs  with diamond on viral protein database.
 rule Blast_contigs_on_nr_vir:
@@ -470,47 +486,27 @@ rule Blast_contigs_on_nr_vir:
 	params:
 		blastDBpath=base_nr_vir,
 		basetaxoDBpath=base_taxo,
-	threads: 4
+	threads: 5
 	shell:
 		"""
-		scif --quiet run diamond blastx -b 10 -d {params.blastDBpath} --sensitive --query {input} --max-hsps 1 --max-target-seqs 1  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output};
+		scif --quiet run diamond blastx  -b 5 -c 1 -d {params.blastDBpath} --taxonlist 10239 --more-sensitive --query {input} --max-hsps 1 --max-target-seqs 1  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output};
 		"""
 
-#First step of alignment of reads (unassembled) with diamond on viral protein database.
-rule Blast_unmapped_on_nr_vir:
+rule Remove_poor_qual_Blast_unmapped_on_nr_vir:
 	input:
-		unflash="Unmapped/{smp}_unflash_unmapped_{RUN}.fa",
-		flash="Unmapped/{smp}_flash_unmapped_{RUN}.fa",
+		"Blast_nr_vir_results/Contigs_{RUN}.blast_nr_vir_results.tsv",
 	output:
-		flash="Blast_nr_vir_results/{smp}_flash_unmapped_{RUN}.blast_nr_vir_results.tsv",
-		unflash="Blast_nr_vir_results/{smp}_unflash_unmapped_{RUN}.blast_nr_vir_results.tsv",
-	params:
-		blastDBpath=base_nr_vir,
-		basetaxoDBpath=base_taxo,
-	threads: 4
+		"Blast_nr_vir_results/Contigs_{RUN}.blast_nr_vir_results_cleaned.tsv",
 	shell:
 		"""
-		if [ -s {input.unflash} ]
-		then
-			scif --quiet run diamond blastx -b 10 -d {params.blastDBpath} --sensitive --query {input.unflash} --max-hsps 1 --max-target-seqs 1 --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output.unflash};
-		else
-			echo "{input.unflash} is empty."
-			touch {output.unflash}
-		fi
-		if [ -s {input.flash} ]
-		then
-			scif --quiet run diamond blastx -b 10 -d {params.blastDBpath} --sensitive --query {input.flash} --max-hsps 1 --max-target-seqs 1 --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output.flash};
-		else
-			echo "{input.flash} is empty."
-			touch {output.flash}
-		fi
+		awk '$3 >= 150 {{ print }}' {input} | awk '$5 >= 75 {{ print }}' > {output}
 		"""
 
 #Extraction of contigs with a hit on the viral database
 rule Extract_hits_contigs_on_nr_vir:
 	input:
 		contigs="Assembly_results/{RUN}_contigs_assembly_results.fa",
-		blast_contigs="Blast_nr_vir_results/Contigs_{RUN}.blast_nr_vir_results.tsv",
+		blast_contigs="Blast_nr_vir_results/Contigs_{RUN}.blast_nr_vir_results_cleaned.tsv",
 	output:
 		"Blast_nr_vir_hits_seq/hits_contigs_{RUN}.fa",
 	params:
@@ -518,24 +514,6 @@ rule Extract_hits_contigs_on_nr_vir:
 	shell:
 		"""
 		python {params} {input.blast_contigs} {input.contigs} {output}
-		"""
-
-#Extraction of reads (unassembled) with a hit on the viral database
-rule Extract_hits_unmapped_on_nr_vir:
-	input:
-		unflash="Unmapped/{smp}_unflash_unmapped_{RUN}.fa",
-		flash="Unmapped/{smp}_flash_unmapped_{RUN}.fa",
-		blastunflash="Blast_nr_vir_results/{smp}_unflash_unmapped_{RUN}.blast_nr_vir_results.tsv",
-		blastflash="Blast_nr_vir_results/{smp}_flash_unmapped_{RUN}.blast_nr_vir_results.tsv",
-	output:
-		hit_unflash="Blast_nr_vir_hits_seq/{smp}_unflash_{RUN}_hits.fa",
-		hit_flash="Blast_nr_vir_hits_seq/{smp}_flash_{RUN}_hits.fa",
-	params:
-		scriptdir+"extract_blast_hits.py"
-	shell:
-		"""
-		python {params} {input.blastunflash} {input.unflash} {output.hit_unflash}
-		python {params} {input.blastflash} {input.flash} {output.hit_flash}
 		"""
 
 #Second step of alignment of contigs with diamond on generalist protein database.
@@ -549,57 +527,20 @@ rule Blast_contigs_on_nr:
 		basetaxoDBpath=base_taxo,
 	shell:
 		"""
-		scif --quiet run diamond  blastx -b 10 -d {params.blastDBpath} --sensitive --query {input} --max-hsps 1 --max-target-seqs 5  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output};
+		scif --quiet run diamond  blastx -d {params.blastDBpath} --sensitive --query {input} --max-hsps 1 --max-target-seqs 5  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output};
 		"""
 
-#Second step of alignment of reads (unassembled) with diamond on generalist protein database.
-rule Blast_unmapped_on_nr:
-	input:
-		hit_unflash="Blast_nr_vir_hits_seq/{smp}_unflash_{RUN}_hits.fa",
-		hit_flash="Blast_nr_vir_hits_seq/{smp}_flash_{RUN}_hits.fa",
-	output:
-		unflash="Blast_nr_results/{smp}_unflash_unmapped_{RUN}.blast_nr_results.tsv",
-		flash="Blast_nr_results/{smp}_flash_unmapped_{RUN}.blast_nr_results.tsv",
-	params:
-		blastDBpath=base_nr,
-		basetaxoDBpath=base_taxo,
-		diamond_dir=scriptdir+"diamond"
-	shell:
-		"""
-		if [ -s {input.hit_unflash} ]
-		then
-			scif --quiet run diamond blastx  -b 10 -d {params.blastDBpath} --sensitive --query {input.hit_unflash} --max-hsps 1 --max-target-seqs 5  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output.unflash};
-		else
-			echo "{input.hit_unflash} is empty."
-			touch {output.unflash}
-		fi
-		if [ -s {input.hit_flash} ]
-		then
-			scif --quiet run diamond blastx -b 10 -d {params.blastDBpath} --sensitive --query {input.hit_flash} --max-hsps 1 --max-target-seqs 5  --taxonmap {params.basetaxoDBpath} -f 6 qseqid sseqid qlen slen length qstart qend sstart send qcovhsp pident evalue bitscore staxids --out {output.flash};
-		else
-			echo "{input.hit_flash} is empty."
-			touch {output.flash}
-		fi
-		"""
 
 # Extract some stats (logs) from the alignement steps
 rule log_diamond:
 	input:
-		blastunflash_nrvir="Blast_nr_vir_results/{smp}_unflash_unmapped_{RUN}.blast_nr_vir_results.tsv",
-		blastflash_nrvir="Blast_nr_vir_results/{smp}_flash_unmapped_{RUN}.blast_nr_vir_results.tsv",
 		blastcontigs_nrvir="Blast_nr_vir_results/Contigs_{RUN}.blast_nr_vir_results.tsv",
-		blastunflash_nr="Blast_nr_results/{smp}_unflash_unmapped_{RUN}.blast_nr_results.tsv",
-		blastflash_nr="Blast_nr_results/{smp}_flash_unmapped_{RUN}.blast_nr_results.tsv",
 		blastcontigs_nr="Blast_nr_results/Contigs_{RUN}.blast_nr_results.tsv"
 	output:
 		"logs/logs_diamond/{smp}_diamond.txt",
 	shell:
 		"""
-		awk '{{print $1}}' {input.blastunflash_nrvir} | sort -u |wc -l  >> {output}
-		awk '{{print $1}}' {input.blastflash_nrvir} | sort -u |wc -l >> {output}
 		awk '{{print $1}}' {input.blastcontigs_nrvir} | sort -u | wc -l >> {output}
-		awk '{{print $1}}' {input.blastunflash_nr} | sort -u |wc -l  >> {output}
-		awk '{{print $1}}' {input.blastflash_nr} | sort -u |wc -l >> {output}
 		awk '{{print $1}}' {input.blastcontigs_nr} | sort -u | wc -l >> {output}
 		"""
 
@@ -607,18 +548,15 @@ unflash_list=expand("Blast_nr_results/{smp}_unflash_unmapped_"+RUN+".blast_nr_re
 flash_list=expand("Blast_nr_results/{smp}_flash_unmapped_"+RUN+".blast_nr_results.tsv", smp=SAMPLES)
 
 #Production of a single file for all alignement results.
-rule Join_alignement_results :
+rule Join_seq_acc_taxo_nr :
 	input:
 		contigs="Blast_nr_results/Contigs_{RUN}.blast_nr_results.tsv",
-		unflash_list=unflash_list,
-		flash_list=flash_list,
 	output:
 		"Taxonomy/Seq_hits_info_{RUN}.csv",
 	params:
-		"Blast_nr_results/*"
 	shell:
 		"""
-		cat {input.contigs} {input.unflash_list} {input.flash_list}| awk -F'\t' '$14!=""' | sort -u -k1,1 | sed "s/;/\t/g" | awk '{{print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$(NF)}}'| sed "s/ /\t/g" > {output}
+		cat {input.contigs} | awk -F'\t' '$14!=""' | sort -u -k1,1 | sed "s/;/\t/g" | awk '{{print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$(NF)}}'| sed "s/ /\t/g" > {output}
 		"""
 
 #Use the taxonomic_id from the alignement to retreive the complete lineage.
@@ -630,7 +568,7 @@ rule get_nr_lineage_from_taxids:
 	params: scriptdir+"get_rank.py"
 	shell:
 		"""
-		sort -u -k1,1  {input} | awk '{{print $NF}}'| sort -u | sed '/^$/d' | paste -s -d,| python {params} {output}
+		sort -u -k1,1  {input} |sed -e 's/;/\t/g'| awk '{{print $NF}}'| sort -u | sed '/^$/d' | paste -s -d,| python {params} {output}
 		"""
 
 count_contigs_list=expand("CountsMapping/{smp}_counts_contigs_"+RUN+".mat",smp=SAMPLES),
@@ -659,30 +597,31 @@ rule complete_taxo:
 		lineage="Coverage/lineage_stats_{RUN}.csv",
 		by_seq="Coverage/stats_by_seq_{RUN}.csv",
 	output:
-		lineage="Coverage/lineage_revise_results_by_ids_{RUN}.csv",
-		by_seq="Coverage/lineage_revise_results_by_seq_{RUN}.csv",
+		lineage="Coverage/abund_by_otu_{RUN}.csv",
+		by_seq="Coverage/abund_by_contigs_{RUN}.csv",
 	params:
 		script = scriptdir+"complete_taxo.py",
 		ref_taxo=ref_taxo,
+		ref_taxo1=ref_taxo1,
 		ICTV_taxo=ICTV_taxo,
 		host_taxo=host_taxo,
 	shell:
 		"""
-		python {params.script} {input.lineage} {input.by_seq} {params.ref_taxo} {params.ICTV_taxo} {params.host_taxo} {output.lineage} {output.by_seq}
+		python {params.script} {input.lineage} {input.by_seq} {params.ref_taxo} {params.ref_taxo1} {params.ICTV_taxo} {params.host_taxo} {output.lineage} {output.by_seq}
 		"""
 
 #Use logs from different rules to produce a summary off the analysis.
 rule Create_logs_report:
 	input:
-		lineage="Coverage/lineage_stats_{RUN}.csv",
-		by_seq="Coverage/stats_by_seq_{RUN}.csv",
+		lineage="Coverage/abund_by_otu_{RUN}.csv",
+		by_seq="Coverage/abund_by_contigs_{RUN}.csv",
 	output:
-		"logs/Summary_log_{RUN}.csv"
+		"logs/stats_run_{RUN}.csv"
 	params:
 		files=datadir,
 		ext=ext_R1+ext,
-		script=scriptdir+"create_results_doc.py",
+		script=scriptdir+"create_results_doc.py"
 	shell:
 		"""
-		python {params.script} {params.files} {params.ext} {input.lineage} {input.by_seq} {output}
+		python {params.script} {params.files} {params.ext} {input.lineage}  {input.by_seq} {output}
 		"""

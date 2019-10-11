@@ -3,36 +3,35 @@
 # A name for the run:
 run: Aevex_mares
 # path to fastq files. All samples fastq are in this directory and formatted as {sample}_1.fastq and {sample}_2.fastq
-fastq: /samples/
+fastq: /homedir/exbrayat/work/formation_seraf/raw_fq/
 # Indicate how the reads are named (ex:_R1 , _R2 or _001_R1 , _001_R2)
-ext_R1: _1
-ext_R2: _2
+ext_R1: "_R1"
+ext_R2: "_R2"
 # Indicate the fastq extension (ex: fastq.gz , fastq , fq )
-ext: .fastq
+ext: ".fastq.gz"
 # Sequence of sequencing adapters
 A3: CAGCGGACGCCTATGTGATG
 A5: CATCACATAGGCGTCCGCTG
 # Path to host sequences
+use_filter2: "yes"
 # Bacterial Ribosomal RNA sequence without duplicates from silva database
-filter_2: /home/aexbrayat/save/ref/rRNA_silva_bacteria.fasta
+filter_2: /gs7k1/projects/CMAEE/share/Snakevir/ref_seq_bacterial_Diptere_rRNA_r132/rRNA_silva_bacteria.fa
 # # Dipetera Ribosomal RNA sequence from silva database without sequence with viral homology (blastn against ntvir)
-filter_1: /home/aexbrayat/save/ref/rRNA_no_vir_hit_diptera.fasta
-# # Number of threads to use for mapping and assembly jobs
-threads: 4
-#Diamond-specific protein database built from NCBI nrvir database
-base_nr_vir: /home/aexbrayat/save/ref/nr_vir_diamond.dmnd
+filter_1: /gs7k1/projects/CMAEE/share/Snakevir/ref_seq_bacterial_Diptere_rRNA_r132/rRNA_no_vir_hit_diptera.fasta
 #Diamond-specific protein database built from NCBI nr database
-base_nr: /home/aexbrayat/save/ref/nr_diamond.dmnd
+base_nr: /gs7k1/projects/CMAEE/share/Snakevir/Diamond_db/nr_diamond_09_19_1.dmnd
 #File joining sequence IDs to taxonomic ids
-base_taxo: /snakevirome/taxonomic_ref/prot.accession2taxid.gz
+base_taxo: /gs7k1/projects/CMAEE/share/Snakevir/accessiontaxid/prot.accession2taxid.gz
 # #Path to external scipts
-Scripts: /snakevirome/scripts/
-# #Custom Viral reference taxonomy
-ref_taxo: /snakevirome/taxonomic_ref/Shi16_Virome_clade_list_SG_PG_2017.csv
+Scripts: /gs7k1/projects/CMAEE/share/Snakevir/scripts_snakevirome/
+#Custom Viral reference taxonomy
+ref_taxo: /gs7k1/projects/CMAEE/share/Snakevir/scripts_snakevirome/Shi16_Virome_clade_list_SG_PG_2017.csv
+#Custom Viral reference taxonomy
+ref_taxo1: /gs7k1/projects/CMAEE/share/Snakevir/scripts_snakevirome/Shi16_Virome_clade_list_SG_PG_2019.csv
 #ICTV Viral reference taxonomy
-ICTV_taxo: /snakevirome/taxonomic_ref/ICTV_taxo_2017.csv
+ICTV_taxo: /gs7k1/projects/CMAEE/share/Snakevir/scripts_snakevirome/ICTV_taxo_2018b.v2.csv
 #Host reference taxonomy
-host_taxo: /snakevirome/taxonomic_ref/Virus_Host_DB_2017.csv
+host_taxo: /gs7k1/projects/CMAEE/share/Snakevir/scripts_snakevirome/Virus_Host_DB_2019_10.csv
 
 #TO DO FOR RUNNING
 # ln -s /gs7k1/projects/CMAEE/share/Snakevir/snakefile /home/exbrayat/work/Tuto/

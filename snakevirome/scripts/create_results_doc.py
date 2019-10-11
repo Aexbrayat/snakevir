@@ -25,6 +25,7 @@ dict_data = [{'Stats':"Total read R1"},{'Stats':"Total read R2"},{'Stats':"Avg r
 {'Stats':"Total pairs"},{'Stats':"Combined pairs"},{'Stats':"Widows"},{'Stats':"Assembled"},{'Stats':"Reads spread across n contig (nb for each samples and Avg for all_samples)"},{'Stats':"Singletons"},{'Stats':"Nb total of contigs"},
 {'Stats':"Min contigs length"},{'Stats':"Max contigs length"},{'Stats':"Avg contigs length"},{'Stats':"Contigs with viral hit"},{'Stats':"Nb of reads with viral hit 'inside' a contig"},{'Stats':"Nb of eads with viral hit as singleton"},{'Stats':"Reads with viral hit"},
 {'Stats':"Nb of viral hit 10 =< Reads < 100 "},{'Stats':"Nb of viral hit 100 =< Reads < 1000"},{'Stats':"Nb of viral hit 1000 =< Reads < 10000"},{'Stats':"Nb of viral hit 10000=< Reads"},{'Stats':"Nb viral family"},{'Stats':"Nb viral genus"},{'Stats':"Nb viral species"}]
+
 for i in range(27):
 	dict_data[i]['All-sample']=int(0)
 list_files=[]
@@ -33,40 +34,37 @@ for input_files in path_files :
 		file_name=input_files.split(ext)[0]
 		csv_columns.append(file_name)
 		list_files.append(file_name)
+
 for files_name in list_files :
-	with open("logs/logscutadapt/"+files_name+"_R1_cut1.log",'r') as cut1_1:
+	with open("logs/logscutadapt/"+files_name+"_cut1.log",'r') as cut1_1:
 		for line in cut1_1:
-			if "Total reads processed" in line:
+			if "Total read pairs processed" in line:
 				c = line.replace(',','').replace(' ','').replace('\n','').split(":")
 				dict_data[0][files_name]=int(c[-1])
-			if "Total written" in line:
-				c1 = line.replace(',','').replace('b',':').replace('\n','').replace(' ','').split(":")
-				dict_data[2][files_name]="%.2f" % (int(c1[1])/int(c[-1]))
-	with open("logs/logscutadapt/"+files_name+"_R2_cut1.log",'r') as cut1_2:
-		for line in cut1_2:
-			if "Total reads processed" in line:
-				c = line.replace(',','').replace(' ','').replace('\n','').split(":")
 				dict_data[1][files_name]=int(c[-1])
 			if "Total written" in line:
+				line = next(cut1_1)
+				c1 = line.replace(',','').replace('b',':').replace('\n','').replace(' ','').split(":")
+				dict_data[2][files_name]="%.2f" % (int(c1[1])/int(c[-1]))
+				line = next(cut1_1)
 				c1 = line.replace(',','').replace('b',':').replace('\n','').replace(' ','').split(":")
 				dict_data[3][files_name]="%.2f" % (int(c1[1])/int(c[-1]))
-	with open("logs/logscutadapt/"+files_name+"_R1_cut2.log",'r') as cut2_1:
+#
+	with open("logs/logscutadapt/"+files_name+"_cut2.log",'r') as cut2_1:
 		for line in cut2_1:
-			if "Reads written" in line:
+			if "Pairs written" in line:
 				c = line.replace(',','').replace('(',':').replace('\n','').replace(' ','').split(":")
 				dict_data[4][files_name]=int(c[2])
-			if "Total written" in line:
-				c1 = line.replace(',','').replace('b',':').replace('\n','').replace(' ','').split(":")
-				dict_data[6][files_name]="%.2f" % (int(c1[1])/int(c[2]))
-	with open("logs/logscutadapt/"+files_name+"_R2_cut2.log",'r') as cut2_2:
-		for line in cut2_2:
-			if "Reads written" in line:
-				c = line.replace(',','').replace('(',':').replace('\n','').replace(' ','').split(":")
 				dict_data[5][files_name]=int(c[2])
 			if "Total written" in line:
+				line = next(cut2_1)
+				c1 = line.replace(',','').replace('b',':').replace('\n','').replace(' ','').split(":")
+				dict_data[6][files_name]="%.2f" % (int(c1[1])/int(c[2]))
+				line = next(cut2_1)
 				c1 = line.replace(',','').replace('b',':').replace('\n','').replace(' ','').split(":")
 				dict_data[7][files_name]="%.2f" % (int(c1[1])/int(c[2]))
-	path="logs/insert_size/"+files_name+"_insert_size_metrics_*"
+
+	path="logs/insert_size/"+files_name+"*metrics*"
 	files_insert=glob.glob(path)
 	with open(files_insert[0],'r') as insert:
 		for line in insert:
@@ -74,6 +72,7 @@ for files_name in list_files :
 				line = next(insert)
 				c = line.split("\t")
 				dict_data[8][files_name]="%.2f" % (float(c[4]))
+
 
 	with open("logs/logsFLASH/"+files_name+"_flash.log",'r') as flash:
 		for line in flash:
@@ -122,14 +121,19 @@ for files_name in list_files :
 				dict_data[12][files_name]=int(R1_b)+int(R2_b)+int(wi_b)
 				dict_data[9][files_name]=(int(dict_data[4][files_name])+int(dict_data[5][files_name]))-int(dict_data[10][files_name])
 				dict_data[11][files_name]=dict_data[10][files_name]-dict_data[12][files_name]
-		for i in (0,1,4,5,9,10,11,12,13,14,15,16,18):
-			dict_data[i]['All-sample']+=int(dict_data[i][files_name])
-		for i in (2,3,6,7,8,17):
-			if dict_data[i]['All-sample']==0:
-				dict_data[i]['All-sample']=round((float(dict_data[i][files_name])), 2)
-			else:
-				dict_data[i]['All-sample']= round((float(dict_data[i]['All-sample']+float(dict_data[i][files_name]))/2), 2)
-	df = pd.read_csv(stats_id, delimiter='\t')
+
+df = pd.read_csv(stats_id, delimiter=',')
+
+n=0
+for files_name in list_files :
+	n+=1
+	for i in (0,1,4,5,9,10,11,12,13,14,15,16,18):
+		dict_data[i]['All-sample']+=int(dict_data[i][files_name])
+	for i in (2,3,6,7,8,17):
+		if dict_data[i]['All-sample']==0:
+			dict_data[i]['All-sample']=round((float(dict_data[i][files_name])), 2)
+		else:
+			dict_data[i]['All-sample']= round((float(dict_data[i]['All-sample']+float(dict_data[i][files_name]))/2), 2)
 	stat_vir=df[files_name] != 0
 	df1=(df[stat_vir].family.value_counts())
 	dict_data[31][files_name]=df1.count()
@@ -163,7 +167,7 @@ for files_name in list_files :
 	dict_data[28][files_name]=sum100
 	dict_data[29][files_name]=sum1000
 	dict_data[30][files_name]=sum10000
-	df = pd.read_csv(stats_seq, delimiter='\t')
+	df = pd.read_csv(stats_seq, delimiter=',')
 	raws = df[[files_name,'qseqid']]
 	in_contigs=0
 	numcont=0
@@ -183,7 +187,7 @@ for files_name in list_files :
 
 
 tot_hit10=tot_hit100=tot_hit1000=tot_hit10000=0
-df = pd.read_csv(stats_id, delimiter='\t')
+df = pd.read_csv(stats_id, delimiter=',')
 for index, raw in df.iterrows():
 	sum_raw=0
 	for input_files in path_files :
@@ -206,7 +210,7 @@ dict_data[30]['All-sample']=tot_hit10000
 
 path=os.listdir("logs/logsAssembly/")
 for input_files in path :
-	if input_files.endswith("Assembly.log"):
+	if input_files.startswith("assembly_stats"):
 		with open("logs/logsAssembly/"+input_files,'r') as asb:
 			data=pd.read_csv(asb, sep="\t", header=None)
 			dict_data[19]['All-sample']=len(data.index)

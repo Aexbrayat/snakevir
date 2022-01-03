@@ -5,7 +5,9 @@ Authors
 Antoni Exbrayat (CIRAD) & Etienne Loire (CIRAD) & Serafin Gutierrez (CIRAD)
 
 Purpose:
-Metagenomic analysis of viral shotgun NGS samples. This pipeline is based on [snakemake](https://snakemake.readthedocs.io/en/stable/). 
+Metagenomic analysis of viral shotgun NGS samples. 
+
+This pipeline is based on [snakemake](https://snakemake.readthedocs.io/en/stable/). 
 ## Step:
   - Cleaning
   - Merging

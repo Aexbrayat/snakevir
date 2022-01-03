@@ -2,6 +2,7 @@
     /Snakefile
     /config.yaml
 
+
 %apprun setup
     if [ ! -e "${SCIF_DATA}/Snakefile" ]; then
         echo "Copying Snakefile to $SCIF_DATA"

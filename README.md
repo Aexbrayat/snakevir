@@ -5,7 +5,7 @@ Authors
 Antoni Exbrayat (CIRAD) & Etienne Loire (CIRAD) & Serafin Gutierrez (CIRAD)
 Purpose:
 
-Metagenomic analysis of viral samples
+Metagenomic analysis of viral samples 
 Steps:
 
     cleaning

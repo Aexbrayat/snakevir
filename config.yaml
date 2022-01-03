@@ -1,41 +1,52 @@
 # YAML file format
 # Some options for the seekviralreads snakefile pipeline
 # A name for the run:
-run: Aevex_mares
+run: "MS00842"
 # path to fastq files. All samples fastq are in this directory and formatted as {sample}_1.fastq and {sample}_2.fastq
-fastq: /homedir/exbrayat/work/formation_seraf/raw_fq/
+fastq: "/home/exbrayata/scratch/M00842/fastq/"
 # Indicate how the reads are named (ex:_R1 , _R2 or _001_R1 , _001_R2)
-ext_R1: "_R1"
-ext_R2: "_R2"
+ext_R1: "_R1_001"
+ext_R2: "_R2_001"
+
 # Indicate the fastq extension (ex: fastq.gz , fastq , fq )
 ext: ".fastq.gz"
+
+threads_default: 4
+threads_Map_On_host: 28
+threads_Map_On_bacteria: 28
+threads_Megahit_Assembly: 28
+threads_Map_On_Assembly: 14
+threads_Blast_contigs_on_nr: 28
+threads_Blast_contigs_on_nt: 28
+
 # Sequence of sequencing adapters
-A3: CAGCGGACGCCTATGTGATG
-A5: CATCACATAGGCGTCCGCTG
+A3: "CAGCGGACGCCTATGTGATG"
+A5: "CATCACATAGGCGTCCGCTG"
+
 # Path to host sequences
-use_filter2: "yes"
 # Bacterial Ribosomal RNA sequence without duplicates from silva database
-filter_2: /gs7k1/projects/CMAEE/share/Snakevir/ref_seq_bacterial_Diptere_rRNA_r132/rRNA_silva_bacteria.fa
-# # Dipetera Ribosomal RNA sequence from silva database without sequence with viral homology (blastn against ntvir)
-filter_1: /gs7k1/projects/CMAEE/share/Snakevir/ref_seq_bacterial_Diptere_rRNA_r132/rRNA_no_vir_hit_diptera.fasta
+rRNA_bact: "/home/exbrayata/projects/ASTRE/Viro/snakevir_pipe/ref_filt/silva_138.1_bacteria.fasta"
+# Dipetera Ribosomal RNA sequence from silva database without sequence with viral homology (blastn against ntvir)
+rRNA_host: "/home/exbrayata/projects/ASTRE/Viro/snakevir_pipe/ref_filt/silva_138.1_insecta.fasta"
+
+
 #Diamond-specific protein database built from NCBI nr database
-base_nr: /gs7k1/projects/CMAEE/share/Snakevir/Diamond_db/nr_diamond_09_19_1.dmnd
-#File joining sequence IDs to taxonomic ids
-base_taxo: /gs7k1/projects/CMAEE/share/Snakevir/accessiontaxid/prot.accession2taxid.gz
-# #Path to external scipts
-Scripts: /gs7k1/projects/CMAEE/share/Snakevir/scripts_snakevirome/
-#Custom Viral reference taxonomy
-ref_taxo: /gs7k1/projects/CMAEE/share/Snakevir/scripts_snakevirome/Shi16_Virome_clade_list_SG_PG_2017.csv
-#Custom Viral reference taxonomy
-ref_taxo1: /gs7k1/projects/CMAEE/share/Snakevir/scripts_snakevirome/Shi16_Virome_clade_list_SG_PG_2019.csv
-#ICTV Viral reference taxonomy
-ICTV_taxo: /gs7k1/projects/CMAEE/share/Snakevir/scripts_snakevirome/ICTV_taxo_2018b.v2.csv
-#Host reference taxonomy
-host_taxo: /gs7k1/projects/CMAEE/share/Snakevir/scripts_snakevirome/Virus_Host_DB_2019_10.csv
+base_nr: "/home/exbrayata/nr_2.0.9_05_21.dmnd"
+#Blast-specific nucleotide database
+base_nt: "/home/exbrayata/work_agap/BANK/biomaj/nt/nt_2021-1-29/flat/nt"
+
+#File joining sequence IDs to taxonomic ids nr
+base_taxo: "/home/exbrayata/projects/ASTRE/Viro/snakevir_pipe/prot.accession2taxid.gz"
+#File joining sequence IDs to taxonomic ids nt
+base_taxo_nt: "/home/exbrayata/work_agap/BANK/biomaj/taxonomy/taxonomy_2021-1-29/flat/accession2taxid/nucl_gb.accession2taxid"
+#File with virus host informations
+host_db: "/home/exbrayata/projects/ASTRE/Viro/snakevir_pipe/virushostdb1_21.csv"
+
+
+#Path to external scipts
+Scripts: "/home/exbrayata/projects/ASTRE/Viro/snakevir_pipe/script/"
 
 #TO DO FOR RUNNING
-# ln -s /gs7k1/projects/CMAEE/share/Snakevir/snakefile /home/exbrayat/work/Tuto/
-# Load python for running snakemake
-# module load system/python/3.4.3
-# Command line to run the script
-# snakemake -s snakefile  --cluster "qsub -q bigmem.q -V -cwd -pe parallel_smp" --jobs 100
+#snakemake -s snakefile  -j 100  --cluster-config cluster.json --cluster "sbatch -p {cluster.queue} {cluster.cluster}"  --printshellcmd --rerun-incomplete  --reason --dryrun
+
+#snakemake -s snakefile  -j 100  --cluster-config cluster.json --cluster "sbatch -p {cluster.queue} -N {cluster.queue} -c {cluster.cpu_task} --mem {cluster.mem} -e {cluster.error} -o {cluster.log} "  --printshellcmd --rerun-incomplete  --reason --dryrun

@@ -1,0 +1,75 @@
+{
+	"__default__": {
+		"job-name": "{rule}",
+		"queue": "agap_normal",
+		"nodes": "1",
+		"cpu_task" : "4",
+		"mem" : "10G",
+		"log" : "cluster_log/{rule}_%j.out"
+	},
+	"Quality_trimming": {
+		"job-name": "{rule}",
+		"queue": "agap_normal",
+		"nodes": "1",
+		"cpu_task" : "4",
+		"mem" : "10G"		
+	},
+	"Map_On_host": {
+		"job-name": "{rule}",
+		"queue": "agap_bigmem",
+		"nodes": "1",
+		"cpu_task" : "10",
+		"mem" : "120G",
+		
+		"log" : "/dev/null"
+	},
+	"Map_On_bacteria": {
+		"job-name": "{rule}",
+		"queue": "agap_bigmem",
+		"nodes": "1",
+		"cpu_task" : "20",
+		"mem" : "120G"
+	},
+	"Megahit_Assembly": {
+		"job-name": "{rule}",
+		"queue": "agap_bigmem",
+		"nodes": "1",
+		"cpu_task" : "20",
+		"mem" : "120G"		
+	},
+	"Cap3_Assembly": {
+		"job-name": "{rule}",
+		"queue": "agap_bigmem",
+		"nodes": "1",
+		"cpu_task" : "10",
+		"mem" : "0"
+	},
+	"Map_On_Assembly": {
+		"job-name": "{rule}",
+		"queue": "agap_bigmem",
+		"nodes": "1",
+		"cpu_task" : "10",
+		"mem" : "120G"
+	},
+	"Blast_contigs_on_nr": {
+		"job-name": "{rule}",
+		"queue": "agap_bigmem",
+		"nodes": "1",
+		"cpu_task" : "10",
+		"mem" : "120G"
+	},
+	"complete_taxo":{
+		"job-name": "{rule}",
+		"queue": "agap_bigmem",
+		"nodes": "1",
+		"cpu_task" : "10",
+		"mem" : "120G"	
+	},
+	"Blast_contigs_on_nt": {
+		"job-name": "{rule}",
+		"queue": "agap_bigmem",
+		"nodes": "1",
+		"cpu_task" : "10",
+		"mem" : "120G"
+	}
+}

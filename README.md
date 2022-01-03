@@ -63,3 +63,5 @@ conda activate snakevir
     snakemake -s snakefile  -j 100  --cluster-config cluster.json --cluster "sbatch -p {cluster.queue} -N {cluster.queue} -c {cluster.cpu_task} --mem {cluster.mem} -e {cluster.error} -o {cluster.log} "  --printshellcmd --rerun-incomplete  --reason --dryrun
 
   to execute on a SLURM cluster with a maximum of 100 concurrent jobs submitted, eventually modify the command accordingly with your job scheduler.
+  
+  Note : A Singularity containers image will be available soon 

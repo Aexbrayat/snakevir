@@ -1,4 +1,4 @@
-snakevir
+snakevir v1.2.0
 
 Authors
 

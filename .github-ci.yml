@@ -1,0 +1,14 @@
+stages:
+  - deploy # mandatory name for the stage to GitLab detect it's a Pages deployment
+
+# Pages
+pages: # mandatory name for the job to GitLab detect it's a Pages deployment
+  stage: deploy
+  image: javanile/mkdocs # Image containing tools required for mkdocs
+  script: mkdocs build
+  artifacts:
+    paths:
+      - public # set public to be deploy
+  needs: []
+  only:
+    - main # only
